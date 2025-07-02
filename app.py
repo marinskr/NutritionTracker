@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from services.api_client import OpenFoodFactsAPI
-#jhjjhjh
+#version 2
 app = Flask(__name__)
 
 @app.route("/", methods=["GET", "POST"])
