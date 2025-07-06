@@ -121,6 +121,28 @@ class Database:
             print(f"Ошибка сброса БД: {e}")
             return False
 
+    def get_today_nutrition(self, date: str) -> dict:
+        """Возвращает сумму КБЖУ за указанную дату"""
+        cursor = self.conn.cursor()
+        cursor.execute("""
+        SELECT 
+            COALESCE(SUM(calories), 0) as total_calories,
+            COALESCE(SUM(proteins), 0) as total_proteins,
+            COALESCE(SUM(fats), 0) as total_fats,
+            COALESCE(SUM(carbs), 0) as total_carbs
+        FROM food_diary
+        WHERE date = ?
+        """, (date,))
+
+        result = cursor.fetchone()
+        return {
+            "total_calories": result[0],
+            "total_proteins": result[1],
+            "total_fats": result[2],
+            "total_carbs": result[3]
+        }
+
+
     def close(self):
         """Закрывает соединение с БД"""
         self.conn.close()
