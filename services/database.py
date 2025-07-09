@@ -143,6 +143,8 @@ class Database:
         }
 
 
+
+
     def close(self):
         """Закрывает соединение с БД"""
         self.conn.close()

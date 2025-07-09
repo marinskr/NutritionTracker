@@ -28,13 +28,69 @@
             background-color: #dc3545;
             color: white;
         }
+        .user-data-form .form-control, .user-data-form .form-select {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-4">
         <h1 class="text-center mb-4">Дневник питания</h1>
 
-        <!-- Поиск продукта (остаётся наверху) -->
+        <!-- Форма для ввода данных пользователя -->
+        <div class="nutrition-card">
+            <h3>Мои данные</h3>
+            <form method="POST" action="{{ url_for('save_settings') }}" class="user-data-form">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Вес (кг)</label>
+                        <input type="number" class="form-control" name="weight"
+                               value="{{ session.user_settings.weight if 'user_settings' in session }}" required min="30" max="200" step="0.1">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Рост (см)</label>
+                        <input type="number" class="form-control" name="height"
+                               value="{{ session.user_settings.height if 'user_settings' in session }}" required min="100" max="250">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Возраст</label>
+                        <input type="number" class="form-control" name="age"
+                               value="{{ session.user_settings.age if 'user_settings' in session }}" required min="10" max="120">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Пол</label>
+                        <select class="form-select" name="gender" required>
+                            <option value="male" {% if 'user_settings' in session and session.user_settings.gender == 'male' %}
+                            selected{% endif %}>Мужской</option>
+                            <option value="female" {% if 'user_settings' in session and session.user_settings.gender == 'female' %}
+                            selected{% endif %}>Женский</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Уровень активности</label>
+                        <select class="form-select" name="activity_level" required>
+                            <option value="1.2" {% if 'user_settings' in session and session.user_settings.activity_level == 1.2 %}
+                            selected{% endif %}>Сидячий образ жизни</option>
+                            <option value="1.375" {% if 'user_settings' in session and session.user_settings.activity_level == 1.375 %}
+                            selected{% endif %}>Легкая активность (1-3 тренировки в неделю)</option>
+                            <option value="1.55" {% if 'user_settings' in session and session.user_settings.activity_level == 1.55 %}
+                            selected{% endif %}>Умеренная активность (3-5 тренировок)</option>
+                            <option value="1.725" {% if 'user_settings' in session and session.user_settings.activity_level == 1.725 %}
+                            selected{% endif %}>Высокая активность (6-7 тренировок)</option>
+                            <option value="1.9" {% if 'user_settings' in session and session.user_settings.activity_level == 1.9 %}
+                            selected{% endif %}>Экстремальная активность (тяжелая работа+тренировки)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save"></i> Сохранить данные
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Форма для поиска продукта -->
         <div class="nutrition-card">
             <h3>Поиск продукта</h3>
             <form method="POST">
@@ -124,6 +180,18 @@
         </div>
         {% endif %}
 
+        <!-- Уведомления -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show mt-3">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <!-- История питания -->
         <div class="nutrition-card mt-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -169,41 +237,45 @@
             {% endif %}
         </div>
 
-        <!-- График потребления за сегодня (перенесён вниз) -->
-        {% if today_stats and (today_stats.total_calories > 0 or today_stats.total_proteins > 0 or today_stats.total_fats > 0 or today_stats.total_carbs > 0) %}
+        <!-- График потребления vs норма -->
+        {% if today_stats and daily_norms %}
         <div class="nutrition-card">
-            <h3>Потребление за сегодня</h3>
+            <h3>Сравнение с дневной нормой</h3>
             <div class="chart-container">
-                <canvas id="todayChart"></canvas>
+                <canvas id="nutritionChart"></canvas>
             </div>
             <script>
-                const ctx = document.getElementById('todayChart').getContext('2d');
+                const ctx = document.getElementById('nutritionChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'bar',
                     data: {
                         labels: ['Калории', 'Белки', 'Жиры', 'Углеводы'],
-                        datasets: [{
-                            label: 'Потребление за сегодня (г)',
-                            data: [
-                                {{ today_stats.total_calories|default(0) }},
-                                {{ today_stats.total_proteins|default(0) }},
-                                {{ today_stats.total_fats|default(0) }},
-                                {{ today_stats.total_carbs|default(0) }}
-                            ],
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.7)',
-                                'rgba(54, 162, 235, 0.7)',
-                                'rgba(255, 206, 86, 0.7)',
-                                'rgba(75, 192, 192, 0.7)'
-                            ],
-                            borderColor: [
-                                'rgba(255, 99, 132, 1)',
-                                'rgba(54, 162, 235, 1)',
-                                'rgba(255, 206, 86, 1)',
-                                'rgba(75, 192, 192, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
+                        datasets: [
+                            {
+                                label: 'Потреблено сегодня',
+                                data: [
+                                    {{ today_stats.total_calories|default(0) }},
+                                    {{ today_stats.total_proteins|default(0) }},
+                                    {{ today_stats.total_fats|default(0) }},
+                                    {{ today_stats.total_carbs|default(0) }}
+                                ],
+                                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Дневная норма',
+                                data: [
+                                    {{ daily_norms.calories }},
+                                    {{ daily_norms.proteins }},
+                                    {{ daily_norms.fats }},
+                                    {{ daily_norms.carbs }}
+                                ],
+                                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,
@@ -213,16 +285,47 @@
                                 beginAtZero: true,
                                 title: {
                                     display: true,
-                                    text: 'Граммы'
+                                    text: 'Ккал/граммы'
                                 }
                             }
                         }
                     }
                 });
             </script>
-        </div>
-        {% endif %}
 
+            <!-- Прогресс-бары -->
+<div class="mt-4">
+    <h5>Процент от нормы:</h5>
+    <!-- Калории -->
+    <div class="progress mb-2" style="height: 25px;">
+        <div class="progress-bar bg-danger" role="progressbar"
+             style="width: {{ [100, today_stats.total_calories/daily_norms.calories*100]|min }}%">
+            Калории: {{ "%.1f"|format([100, today_stats.total_calories/daily_norms.calories*100]|min) }}%
+        </div>
+    </div>
+    <!-- Белки -->
+    <div class="progress mb-2" style="height: 25px;">
+        <div class="progress-bar bg-primary" role="progressbar"
+             style="width: {{ [100, today_stats.total_proteins/daily_norms.proteins*100]|min }}%">
+            Белки: {{ "%.1f"|format([100, today_stats.total_proteins/daily_norms.proteins*100]|min) }}%
+        </div>
+    </div>
+    <!-- Жиры -->
+    <div class="progress mb-2" style="height: 25px;">
+        <div class="progress-bar bg-warning" role="progressbar"
+             style="width: {{ [100, today_stats.total_fats/daily_norms.fats*100]|min }}%">
+            Жиры: {{ "%.1f"|format([100, today_stats.total_fats/daily_norms.fats*100]|min) }}%
+        </div>
+    </div>
+    <!-- Углеводы -->
+    <div class="progress mb-2" style="height: 25px;">
+        <div class="progress-bar bg-success" role="progressbar"
+             style="width: {{ [100, today_stats.total_carbs/daily_norms.carbs*100]|min }}%">
+            Углеводы: {{ "%.1f"|format([100, today_stats.total_carbs/daily_norms.carbs*100]|min) }}%
+        </div>
+    </div>
+</div>
+        {% endif %}
     </div>
 
     <!-- Модальное окно подтверждения сброса -->
