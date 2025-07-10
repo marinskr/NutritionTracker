@@ -20,9 +20,79 @@
 
     <!-- График потребления vs норма -->
     {% if today_stats and daily_norms %}
-        {% include "partials/nutrition_chart.html" %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Сравнение с дневной нормой</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height: 300px;">
+                    <canvas id="nutritionChart"></canvas>
+                </div>
+            </div>
+        </div>
     {% endif %}
 
-    <!-- Модальное окно подтверждения сброса -->
+    <!-- Персональные рекомендации -->
+    {% if today_stats and daily_norms %}
+        {% include "partials/product_recommendations.html" %}
+    {% endif %}
+
+    <!-- Модальные окна -->
     {% include "partials/reset_modal.html" %}
+    {% include "partials/clear_settings_modal.html" %}
+{% endblock %}
+
+{% block scripts %}
+    {% if today_stats and daily_norms %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('nutritionChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Калории', 'Белки', 'Жиры', 'Углеводы'],
+                    datasets: [
+                        {
+                            label: 'Дневная норма',
+                            data: [
+                                {{ daily_norms.calories|round(1) }},
+                                {{ daily_norms.proteins|round(1) }},
+                                {{ daily_norms.fats|round(1) }},
+                                {{ daily_norms.carbs|round(1) }}
+                            ],
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Потреблено',
+                            data: [
+                                {{ today_stats.total_calories|round(1) }},
+                                {{ today_stats.total_proteins|round(1) }},
+                                {{ today_stats.total_fats|round(1) }},
+                                {{ today_stats.total_carbs|round(1) }}
+                            ],
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Граммы/ккал'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+    {% endif %}
 {% endblock %}

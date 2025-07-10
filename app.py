@@ -3,6 +3,7 @@ from services.api_client import OpenFoodFactsAPI
 from services.database import Database
 from services.calorie_calculator import CalorieCalculator
 from datetime import datetime
+from services.recommendation_engine import RecommendationEngine
 import secrets
 
 app = Flask(__name__)
@@ -13,6 +14,9 @@ RESET_TOKEN = secrets.token_urlsafe(16)
 def get_db_connection():
     return Database()
 
+@app.context_processor
+def inject_now():
+    return {'now': datetime.now()}
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -82,13 +86,20 @@ def index():
     finally:
         db.close()
 
+        recommendations = []
+        if 'user_settings' in session and today_stats:
+            engine = RecommendationEngine()
+            recommendations = engine.recommend_products(daily_norms, today_stats)
+            engine.close()
+
     return render_template(
         "index.html",
         product=product,
         food_history=food_history,
         today_stats=today_stats,
         daily_norms=daily_norms,
-        reset_token=RESET_TOKEN
+        reset_token=RESET_TOKEN,
+        recommendations=recommendations
     )
 
 
@@ -153,6 +164,50 @@ def clear_settings():
         db.close()
     return redirect(url_for("index"))
 
+
+# Добавим новый маршрут
+@app.route("/get-recommendations")
+def get_recommendations():
+    if 'user_settings' not in session:
+        flash("Сначала установите свои параметры", "warning")
+        return redirect(url_for("index"))
+
+    db = get_db_connection()
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    try:
+        # Получаем текущую статистику
+        today_stats = db.get_today_nutrition(today)
+
+        # Рассчитываем нормы
+        settings = session['user_settings']
+        calories = CalorieCalculator.calculate_daily_calories(
+            weight=settings['weight'],
+            height=settings['height'],
+            age=settings['age'],
+            gender=settings['gender'],
+            activity_level=settings['activity_level']
+        )
+        daily_norms = CalorieCalculator.get_macronutrients(calories)
+        daily_norms['calories'] = calories
+
+        # Получаем рекомендации
+        engine = RecommendationEngine()
+        recommendations = engine.recommend_products(daily_norms, today_stats)
+        engine.close()
+
+        return render_template("partials/product_recommendations.html", recommendations=recommendations)
+
+    except Exception as e:
+        flash(f"Ошибка получения рекомендаций: {str(e)}", "danger")
+        return redirect(url_for("index"))
+    finally:
+        db.close()
+
+@app.route("/about")
+def about():
+    """Страница 'О сервисе'"""
+    return render_template("about.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002, debug=True)
