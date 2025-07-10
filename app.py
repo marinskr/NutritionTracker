@@ -27,6 +27,11 @@ def index():
 
     try:
         # Обработка POST-запросов
+        # Получаем настройки пользователя из БД при первом заходе
+        if 'user_settings' not in session:
+            user_settings = db.get_user_settings()
+            if user_settings:
+                session['user_settings'] = user_settings
         if request.method == "POST":
             if "search_product" in request.form:
                 barcode = request.form.get("barcode")
@@ -89,18 +94,28 @@ def index():
 
 @app.route("/save-settings", methods=["POST"])
 def save_settings():
+    db = get_db_connection()
     try:
-        # Сохраняем настройки пользователя в сессию
-        session['user_settings'] = {
+        user_data = {
             'weight': float(request.form.get('weight')),
             'height': float(request.form.get('height')),
             'age': int(request.form.get('age')),
             'gender': request.form.get('gender'),
             'activity_level': float(request.form.get('activity_level'))
         }
-        flash("Настройки успешно сохранены", "success")
+
+        # Сохраняем в базу данных
+        if db.save_user_settings(user_data):
+            # Также сохраняем в сессию для удобства
+            session['user_settings'] = user_data
+            flash("Настройки успешно сохранены", "success")
+        else:
+            flash("Ошибка сохранения настроек", "danger")
+
     except Exception as e:
         flash(f"Ошибка сохранения настроек: {str(e)}", "danger")
+    finally:
+        db.close()
     return redirect(url_for("index"))
 
 
@@ -119,6 +134,23 @@ def reset_db():
             db.close()
     else:
         flash("Неверный запрос на очистку", "danger")
+    return redirect(url_for("index"))
+
+@app.route("/clear-settings", methods=["POST"])
+def clear_settings():
+    db = get_db_connection()
+    try:
+        if db.clear_user_settings():
+            # Удаляем из сессии тоже
+            if 'user_settings' in session:
+                session.pop('user_settings')
+            flash("Пользовательские данные успешно очищены", "success")
+        else:
+            flash("Ошибка при очистке пользовательских данных", "danger")
+    except Exception as e:
+        flash(f"Ошибка: {str(e)}", "danger")
+    finally:
+        db.close()
     return redirect(url_for("index"))
 
 

@@ -1,4 +1,5 @@
-<div class="modal fade modal-danger" id="resetModal" tabindex="-1">
+<!-- Добавим после resetModal -->
+<div class="modal fade modal-danger" id="clearSettingsModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -6,21 +7,19 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Вы действительно хотите удалить ВСЕ данные дневника питания?</p>
+                <p>Вы действительно хотите удалить ВСЕ ваши персональные данные (вес, рост, возраст и т.д.)?</p>
                 <p class="fw-bold text-danger">Это действие нельзя отменить!</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle"></i> Отмена
                 </button>
-                <form method="POST" action="{{ url_for('reset_db') }}" style="display: inline;">
-                    <input type="hidden" name="token" value="{{ reset_token }}">
+                <form method="POST" action="{{ url_for('clear_settings') }}" style="display: inline;">
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash"></i> Да, очистить дневник
+                        <i class="bi bi-trash"></i> Да, очистить мои данные
                     </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-

@@ -142,6 +142,143 @@ class Database:
             "total_carbs": result[3]
         }
 
+    def _create_tables(self):
+        """Создаёт нормализованную структуру таблиц"""
+        cursor = self.conn.cursor()
+
+        # Таблица пользователей
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            weight REAL NOT NULL,
+            height REAL NOT NULL,
+            age INTEGER NOT NULL,
+            gender TEXT NOT NULL,
+            activity_level REAL NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        # Таблица продуктов
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            barcode TEXT UNIQUE,
+            name TEXT NOT NULL,
+            calories_per_100g REAL,
+            proteins_per_100g REAL,
+            fats_per_100g REAL,
+            carbs_per_100g REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        # Таблица записей потребления
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS consumption (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER NOT NULL,
+            date DATE NOT NULL DEFAULT CURRENT_DATE,
+            grams REAL NOT NULL,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        )
+        """)
+
+        # Удаляем старое представление, если оно существует
+        cursor.execute("DROP VIEW IF EXISTS food_diary")
+
+        # Создаем новое представление
+        cursor.execute("""
+        CREATE VIEW IF NOT EXISTS food_diary AS
+        SELECT 
+            c.id,
+            p.name,
+            p.barcode,
+            c.date,
+            c.grams,
+            ROUND(p.calories_per_100g * c.grams / 100, 1) AS calories,
+            ROUND(p.proteins_per_100g * c.grams / 100, 1) AS proteins,
+            ROUND(p.fats_per_100g * c.grams / 100, 1) AS fats,
+            ROUND(p.carbs_per_100g * c.grams / 100, 1) AS carbs
+        FROM consumption c
+        JOIN products p ON c.product_id = p.id
+        ORDER BY c.date DESC, c.id DESC
+        """)
+
+        self.conn.commit()
+
+    def save_user_settings(self, user_data: Dict) -> bool:
+        """Сохраняет настройки пользователя в базу данных"""
+        try:
+            cursor = self.conn.cursor()
+            # Удаляем старые записи (если они есть) и сохраняем новые
+            cursor.execute("DELETE FROM users")
+            cursor.execute("""
+            INSERT INTO users 
+            (weight, height, age, gender, activity_level)
+            VALUES (?, ?, ?, ?, ?)
+            """, (
+                user_data['weight'],
+                user_data['height'],
+                user_data['age'],
+                user_data['gender'],
+                user_data['activity_level']
+            ))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Ошибка сохранения настроек пользователя: {e}")
+            return False
+
+    def get_user_settings(self) -> Optional[Dict]:
+        """Получает последние сохранённые настройки пользователя"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
+            result = cursor.fetchone()
+            if result:
+                return {
+                    'weight': result[1],
+                    'height': result[2],
+                    'age': result[3],
+                    'gender': result[4],
+                    'activity_level': result[5]
+                }
+            return None
+        except Exception as e:
+            print(f"Ошибка получения настроек пользователя: {e}")
+            return None
+
+    def reset_database(self) -> bool:
+        """Полностью очищает базу данных"""
+        try:
+            cursor = self.conn.cursor()
+            # Удаляем все таблицы и представления
+            cursor.execute("DROP TABLE IF EXISTS consumption")
+            cursor.execute("DROP TABLE IF EXISTS products")
+            cursor.execute("DROP TABLE IF EXISTS users")
+            cursor.execute("DROP VIEW IF EXISTS food_diary")
+            self.conn.commit()
+
+            # Воссоздаём структуру
+            self._create_tables()
+            return True
+        except Exception as e:
+            print(f"Ошибка сброса БД: {e}")
+            return False
+
+    def clear_user_settings(self) -> bool:
+        """Очищает все пользовательские данные"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM users")
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Ошибка очистки пользовательских данных: {e}")
+            return False
+
 
 
 
