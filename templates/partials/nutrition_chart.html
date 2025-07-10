@@ -1,0 +1,122 @@
+<div class="nutrition-card">
+    <h3>Сравнение с дневной нормой</h3>
+    <div class="chart-container">
+        <canvas id="nutritionChart"></canvas>
+    </div>
+    <script>
+        const ctx = document.getElementById('nutritionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Калории', 'Белки', 'Жиры', 'Углеводы'],
+                datasets: [
+                    {
+                        label: 'Потреблено сегодня',
+                        data: [
+                            {{ today_stats.total_calories|default(0) }},
+                            {{ today_stats.total_proteins|default(0) }},
+                            {{ today_stats.total_fats|default(0) }},
+                            {{ today_stats.total_carbs|default(0) }}
+                        ],
+                        backgroundColor: 'rgba(147, 197, 253, 0.7)',  // Пастельный синий
+                        borderColor: 'rgba(96, 165, 250, 1)',         // Более насыщенный синий для границы
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Дневная норма',
+                        data: [
+                            {{ daily_norms.calories }},
+                            {{ daily_norms.proteins }},
+                            {{ daily_norms.fats }},
+                            {{ daily_norms.carbs }}
+                        ],
+                        backgroundColor: 'rgba(252, 165, 165, 0.7)', // Пастельный красный
+                        borderColor: 'rgba(248, 113, 113, 1)',       // Более насыщенный красный для границы
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Ккал/граммы'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <!-- Прогресс-бары -->
+    <div class="mt-4">
+        <h5>Процент от нормы:</h5>
+        <!-- Калории -->
+        {% set calories_percent = (today_stats.total_calories/daily_norms.calories*100) %}
+        <div class="progress mb-2" style="height: 25px;">
+            <div class="progress-bar"
+                 style="background-color: #FECACA; width: {{ [100, calories_percent]|min }}%">
+                <span class="{% if calories_percent > 100 %}text-danger fw-bold{% endif %}">
+                    Калории:
+                    {% if calories_percent > 100 %}
+                        +{{ "%.1f"|format(calories_percent - 100) }}%
+                    {% else %}
+                        {{ "%.1f"|format(calories_percent) }}%
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Белки -->
+        {% set proteins_percent = (today_stats.total_proteins/daily_norms.proteins*100) %}
+        <div class="progress mb-2" style="height: 25px;">
+            <div class="progress-bar"
+                 style="background-color: #A5B4FC; width: {{ [100, proteins_percent]|min }}%">
+                <span class="{% if proteins_percent > 100 %}text-danger fw-bold{% endif %}">
+                    Белки:
+                    {% if proteins_percent > 100 %}
+                        +{{ "%.1f"|format(proteins_percent - 100) }}%
+                    {% else %}
+                        {{ "%.1f"|format(proteins_percent) }}%
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Жиры -->
+        {% set fats_percent = (today_stats.total_fats/daily_norms.fats*100) %}
+        <div class="progress mb-2" style="height: 25px;">
+            <div class="progress-bar"
+                 style="background-color: #FDE68A; width: {{ [100, fats_percent]|min }}%">
+                <span class="{% if fats_percent > 100 %}text-danger fw-bold{% endif %}">
+                    Жиры:
+                    {% if fats_percent > 100 %}
+                        +{{ "%.1f"|format(fats_percent - 100) }}%
+                    {% else %}
+                        {{ "%.1f"|format(fats_percent) }}%
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Углеводы -->
+        {% set carbs_percent = (today_stats.total_carbs/daily_norms.carbs*100) %}
+        <div class="progress mb-2" style="height: 25px;">
+            <div class="progress-bar"
+                 style="background-color: #A7F3D0; width: {{ [100, carbs_percent]|min }}%">
+                <span class="{% if carbs_percent > 100 %}text-danger fw-bold{% endif %}">
+                    Углеводы:
+                    {% if carbs_percent > 100 %}
+                        +{{ "%.1f"|format(carbs_percent - 100) }}%
+                    {% else %}
+                        {{ "%.1f"|format(carbs_percent) }}%
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

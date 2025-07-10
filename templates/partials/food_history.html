@@ -1,0 +1,43 @@
+<div class="nutrition-card mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">История питания</h3>
+        {% if food_history %}
+        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#resetModal">
+            <i class="bi bi-trash"></i> Очистить дневник
+        </button>
+        {% endif %}
+    </div>
+
+    {% if food_history %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Продукт</th>
+                    <th>Дата</th>
+                    <th>Граммы</th>
+                    <th>Ккал</th>
+                    <th>Белки</th>
+                    <th>Жиры</th>
+                    <th>Углеводы</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in food_history %}
+                <tr>
+                    <td>{{ entry[1] }}</td>
+                    <td>{{ entry[3] }}</td>
+                    <td>{{ "%.0f"|format(entry[4]) }}</td>
+                    <td>{{ "%.1f"|format(entry[5]) }}</td>
+                    <td>{{ "%.1f"|format(entry[6]) }}</td>
+                    <td>{{ "%.1f"|format(entry[7]) }}</td>
+                    <td>{{ "%.1f"|format(entry[8]) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Нет записей в дневнике</p>
+    {% endif %}
+</div>

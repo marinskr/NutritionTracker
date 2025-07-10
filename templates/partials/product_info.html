@@ -1,0 +1,68 @@
+<div class="nutrition-card">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>{{ product.name }}</h3>
+            {% if product.barcode %}
+            <p class="text-muted">Штрих-код: {{ product.barcode }}</p>
+            {% endif %}
+
+            <div class="row mt-3">
+                <div class="col-6 col-md-3">
+                    <div class="card bg-light mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ product.calories }}</h5>
+                            <p class="card-text text-muted">Ккал/100г</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card bg-light mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ product.proteins }}</h5>
+                            <p class="card-text text-muted">Белки/100г</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card bg-light mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ product.fats }}</h5>
+                            <p class="card-text text-muted">Жиры/100г</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card bg-light mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ product.carbs }}</h5>
+                            <p class="card-text text-muted">Углеводы/100г</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="entry-form">
+                <h4>Добавить приём пищи</h4>
+                <form method="POST">
+                    <input type="hidden" name="name" value="{{ product.name }}">
+                    <input type="hidden" name="barcode" value="{{ product.barcode }}">
+                    <input type="hidden" name="calories" value="{{ product.calories }}">
+                    <input type="hidden" name="proteins" value="{{ product.proteins }}">
+                    <input type="hidden" name="fats" value="{{ product.fats }}">
+                    <input type="hidden" name="carbs" value="{{ product.carbs }}">
+
+                    <div class="mb-3">
+                        <label for="grams" class="form-label">Количество (грамм):</label>
+                        <input type="number" class="form-control" id="grams" name="grams" min="1" step="1" value="100" required>
+                    </div>
+
+                    <button type="submit" name="save_entry" class="btn btn-success w-100">
+                        <i class="bi bi-journal-plus"></i> Добавить в дневник
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
